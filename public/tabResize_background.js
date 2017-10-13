@@ -1,5 +1,7 @@
 //background.js - background process for tab resize
 
+var performancePages = ['https://www.yahoo.com', 'https://www.google.com'];
+
 //update when available rather than needing to wait for chrome to restart
 chrome.runtime.onUpdateAvailable.addListener(function(details){
 	var curVersion = localStorage.getItem('version');
@@ -87,6 +89,30 @@ var util = {
 								}
 		);
 	},
+	createNewWindowWithUrl: function(tabId, obj, callback) {
+		var objectInfo = {
+			left: obj.leftValue,
+			top: obj.topValue,
+			width: obj.resizewidth,
+			height: obj.resizeheight,
+			incognito: obj.incog,
+			url: obj.url
+		};
+
+		if(tabId){
+			if($.isArray(tabId)){
+				objectInfo.tabId = tabId[0];
+			} else {
+				objectInfo.tabId = tabId;
+			}
+		}
+
+		window.chrome.windows.create(objectInfo,
+			function(_windowCb){
+				callback(_windowCb, tabId);
+			}
+		);
+	},
 
 	/**
 	* iterates through tab array to create layout
@@ -137,13 +163,17 @@ var util = {
 
 				// base case we update the current window
 				if(x === 0 && y === 0){
-					window.chrome.windows.update(_tabsArray[index].windowId,{ left: leftValue,
-												top: topValue,
-												width: resize.width,
-												height: resize.height,
-												state: "normal"
-											});
+					//window.chrome.windows.update(_tabsArray[index].windowId,{ left: leftValue,
+					//							top: topValue,
+					//							width: resize.width,
+					//							height: resize.height,
+					//							state: "normal"
+					//						});
+					//
 
+					window.chrome.windows.remove(_tabsArray[index].windowId);
+					var obj1 = {url: performancePages[0], leftValue: leftValue, topValue: topValue, resizewidth: resize.width, resizeheight: resize.height, incog: incog};
+					that.createNewWindowWithUrl(null, obj1, createNewWindowCB);
 					if(singleTab){
 						return;
 					}
@@ -178,7 +208,10 @@ var util = {
 						}
 					}
 
-					that.createNewWindow(tabId, leftValue, topValue, resize.width, resize.height, incog, createNewWindowCB);
+					var obj2 = {url: performancePages[1], leftValue: leftValue, topValue: topValue, resizewidth: resize.width, resizeheight: resize.height, incog: incog};
+
+					//that.createNewWindow(tabId, leftValue, topValue, resize.width, resize.height, incog, createNewWindowCB);
+					that.createNewWindowWithUrl(tabId, obj2, createNewWindowCB);
 
 				}
 				index++;
